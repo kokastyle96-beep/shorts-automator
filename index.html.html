@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shorts Automator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #e8e8e8;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a0000, #0a0a0a);
+    border-bottom: 1px solid #2a0000;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    width: 40px; height: 40px;
+    background: #ff2200;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 20px rgba(255,34,0,0.5);
+  }
+  .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+  .header p { font-size: 11px; color: #666; letter-spacing: 2px; text-transform: uppercase; }
+
+  .container { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+
+  .card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-label {
+    font-size: 10px;
+    color: #ff2200;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+
+  label { font-size: 11px; color: #666; display: block; margin-bottom: 5px; }
+  input, select {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #222;
+    border-radius: 8px;
+    color: #e8e8e8;
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus, select:focus { border-color: #ff2200; }
+
+  .main-btn {
+    width: 100%;
+    padding: 18px;
+    background: #ff2200;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 30px rgba(255,34,0,0.35);
+    margin-bottom: 16px;
+    transition: all 0.2s;
+  }
+  .main-btn:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; }
+
+  .steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 10px;
+    transition: all 0.3s;
+  }
+  .step.active { border-color: #ffd600; background: rgba(255,214,0,0.05); }
+  .step.done { border-color: #00e676; background: rgba(0,230,118,0.05); }
+  .step.error { border-color: #ff2200; background: rgba(255,34,0,0.05); }
+  .step-icon { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+  .step-title { font-size: 14px; font-weight: 600; }
+  .step-sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .step.active .step-sub { color: #ffd600; }
+  .step.done .step-sub { color: #00e676; }
+  .step.error .step-sub { color: #ff4444; }
+
+  .progress-bar { height: 4px; background: #1a1a1a; border-radius: 2px; margin-bottom: 16px; display: none; }
+  .progress-bar.visible { display: block; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #ff2200, #ffd600); border-radius: 2px; transition: width 0.5s; width: 0%; }
+
+  .script-box {
+    background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 10px;
+    padding: 16px; font-size: 13px; line-height: 1.8; color: #ccc;
+    white-space: pre-wrap; max-height: 180px; overflow-y: auto; margin-bottom: 12px;
+  }
+  .action-btn {
+    width: 100%; padding: 14px;
+    background: transparent;
+    border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 10px;
+    font-family: inherit;
+  }
+  .btn-green { border: 1px solid #00e676; color: #00e676; }
+  .btn-green:hover { background: rgba(0,230,118,0.08); }
+  .btn-red { border: 1px solid #ff2200; color: #ff2200; }
+  .btn-red:hover { background: rgba(255,34,0,0.08); }
+  .btn-blue { border: 1px solid #4488ff; color: #4488ff; }
+  .btn-blue:hover { background: rgba(68,136,255,0.08); }
+
+  video { width: 100%; border-radius: 10px; background: #000; display: block; margin-bottom: 12px; }
+
+  .loading-msg {
+    text-align: center; padding: 20px;
+    color: #666; font-size: 13px; line-height: 1.8;
+  }
+  .spinner { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tag {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; background: rgba(255,34,0,0.1);
+    border: 1px solid rgba(255,34,0,0.2); color: #ff6644;
+    margin: 2px;
+  }
+  .warn {
+    background: rgba(255,214,0,0.08); border: 1px solid rgba(255,214,0,0.2);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #ffd600;
+    margin-bottom: 12px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">▶</div>
+  <div>
+    <h1>Shorts Automator</h1>
+    <p>Facts & Trivia • MP4 Engine</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-label">⚙️ Setup</div>
+
+    <label>AI ENGINE</label>
+    <select id="aiEngine" onchange="toggleKeys()">
+      <option value="groq">Groq (LLaMA) — Recommended</option>
+      <option value="gemini">Gemini (Google)</option>
+      <option value="both">Both — Gemini first, Groq backup</option>
+    </select>
+
+    <div id="groqKeyBox">
+      <label>GROQ API KEY</label>
+      <input type="password" id="groqKey" placeholder="gsk_xxxxxxxxxxxx" />
+    </div>
+    <div id="geminiKeyBox" style="display:none">
+      <label>GEMINI API KEY</label>
+      <input type="password" id="geminiKey" placeholder="AIzaSy_xxxxxxxxxxxx" />
+    </div>
+
+    <label>TOPIC (leave blank for random)</label>
+    <input type="text" id="topic" placeholder="space, ocean, ancient egypt..." />
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="steps">
+    <div class="step" id="step1">
+      <div class="step-icon">📝</div>
+      <div>
+        <div class="step-title">Write Script</div>
+        <div class="step-sub" id="sub1">AI generates documentary script</div>
+      </div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-icon">🎙️</div>
+      <div>
+        <div class="step-title">Record Voiceover</div>
+        <div class="step-sub" id="sub2">Browser captures speech synthesis</div>
+      </div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-icon">🎬</div>
+      <div>
+        <div class="step-title">Build MP4 Video</div>
+        <div class="step-sub" id="sub3">FFmpeg renders real video file</div>
+      </div>
+    </div>
+    <div class="step" id="step4">
+      <div class="step-icon">📤</div>
+      <div>
+        <div class="step-title">Download & Upload</div>
+        <div class="step-sub" id="sub4">Save MP4 → upload to YouTube</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="main-btn" id="mainBtn" onclick="runAutomation()">
+    🚀 GENERATE TODAY'S VIDEO
+  </button>
+
+  <!-- Script output -->
+  <div class="card" id="scriptCard" style="display:none">
+    <div class="card-label">📝 Script</div>
+    <div class="script-box" id="scriptOutput"></div>
+    <div id="titleOutput" style="font-size:13px;color:#aaa;margin-bottom:8px;font-weight:600"></div>
+    <div id="tagsOutput" style="margin-bottom:12px"></div>
+    <button class="action-btn btn-blue" onclick="copyScript()">📋 Copy Script</button>
+  </div>
+
+  <!-- Video output -->
+  <div class="card" id="videoCard" style="display:none">
+    <div class="card-label">🎬 Your Video</div>
+    <video id="videoPlayer" controls></video>
+    <button class="action-btn btn-green" id="downloadBtn" onclick="downloadVideo()">⬇️ Download MP4</button>
+    <button class="action-btn btn-red" onclick="window.open('https://studio.youtube.com','_blank')">▶ Open YouTube Studio</button>
+  </div>
+
+  <!-- FFmpeg loading -->
+  <div class="card" id="ffmpegCard" style="display:none">
+    <div class="loading-msg" id="ffmpegMsg">
+      <div class="spinner">⚙️</div><br>
+      Loading video engine...<br>
+      <small style="color:#444">(First time takes 30-60 seconds)</small>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let script = '', title = '', tags = [];
+let audioChunks = [], audioBlob = null;
+let ffmpegLoaded = false;
+let { createFFmpeg, fetchFile } = {};
+
+const TOPICS = ['deep ocean','outer space','ancient Egypt','human brain',
+  'quantum physics','extinct animals','lost civilizations','black holes',
+  'Amazon rainforest','ancient Rome','DNA genetics','volcanoes'];
+
+// ── UI Helpers ─────────────────────────────────────────
+function setStep(n, state, sub) {
+  const el = document.getElementById('step'+n);
+  el.className = 'step ' + state;
+  if (sub) document.getElementById('sub'+n).textContent = sub;
+  const map = {active:'⏳', done:'✅', error:'❌'};
+  el.querySelector('.step-icon').textContent =
+    map[state] || ['📝','🎙️','🎬','📤'][n-1];
+}
+function setProgress(p) {
+  document.getElementById('progressBar').classList.add('visible');
+  document.getElementById('progressFill').style.width = p+'%';
+}
+function toggleKeys() {
+  const e = document.getElementById('aiEngine').value;
+  document.getElementById('groqKeyBox').style.display = e==='gemini' ? 'none':'block';
+  document.getElementById('geminiKeyBox').style.display = e==='groq' ? 'none':'block';
+}
+
+// ── AI Script Generation ───────────────────────────────
+const PROMPT = t => `Write a documentary-style YouTube Shorts script about ${t}.
+Rules: 45 seconds when read aloud. One shocking hook. 4 fascinating facts (1-2 sentences each). One powerful closing line. No labels/numbers. Flowing paragraph. National Geographic narrator style.
+Give YouTube title (max 80 chars) and 5 tags.
+JSON only, no markdown: {"title":"...","tags":["t1","t2","t3","t4","t5"],"script":"..."}`;
+
+async function callGroq(topic, key) {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:PROMPT(topic)}]})
+  });
+  const d = await r.json();
+  if(d.error) throw new Error(d.error.message);
+  return JSON.parse(d.choices[0].message.content.replace(/```json|```/g,'').trim());
+}
+
+async function callGemini(topic, key) {
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:PROMPT(topic)}]}]})
+  });
+  const d = await r.json();
+  if(d.error) throw new Error(d.error.message);
+  return JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim());
+}
+
+// ── Voiceover via MediaRecorder + SpeechSynthesis ──────
+function recordSpeech(text) {
+  return new Promise((resolve, reject) => {
+    const synth = window.speechSynthesis;
+    const ctx = new AudioContext();
+    const dest = ctx.createMediaStreamDestination();
+    const recorder = new MediaRecorder(dest.stream);
+    const chunks = [];
+
+    recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+    recorder.onstop = () => {
+      audioBlob = new Blob(chunks, {type:'audio/webm'});
+      resolve(audioBlob);
+    };
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = 0.85;
+    utter.pitch = 0.9;
+    const voices = synth.getVoices();
+    const v = voices.find(v=>v.name.includes('Google')&&v.lang==='en-US') ||
+              voices.find(v=>v.lang==='en-US') || voices[0];
+    if(v) utter.voice = v;
+
+    utter.onstart = () => recorder.start();
+    utter.onend = () => { recorder.stop(); ctx.close(); };
+    utter.onerror = reject;
+
+    synth.speak(utter);
+  });
+}
+
+// ── Canvas Frame Builder ───────────────────────────────
+function buildFrame(canvas, text, lineIndex, totalLines) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1080; canvas.height = 1920;
+
+  // Background
+  const g = ctx.createLinearGradient(0,0,0,1920);
+  g.addColorStop(0,'#080810'); g.addColorStop(1,'#100808');
+  ctx.fillStyle = g; ctx.fillRect(0,0,1080,1920);
+
+  // Accent circles
+  ctx.beginPath(); ctx.arc(1080,200,500,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,34,0,0.04)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(0,1800,400,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,100,0,0.03)'; ctx.fill();
+
+  // Top bar
+  ctx.fillStyle='#ff2200'; ctx.fillRect(0,0,1080,6);
+
+  // Logo text
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.font='bold 34px Arial'; ctx.textAlign='center';
+  ctx.fillText('DAILY FACTS', 540, 70);
+
+  // Big emoji
+  ctx.font='160px Arial'; ctx.fillText('🌍', 540, 350);
+
+  // Title
+  ctx.fillStyle='#ffffff'; ctx.font='bold 58px Arial';
+  const tWords = title.split(' ');
+  let tLine='', tLines=[], tMaxW=900;
+  for(let w of tWords){
+    const test = tLine?tLine+' '+w:w;
+    if(ctx.measureText(test).width>tMaxW&&tLine){tLines.push(tLine);tLine=w;}
+    else tLine=test;
+  }
+  if(tLine) tLines.push(tLine);
+  tLines.slice(0,3).forEach((l,i)=>ctx.fillText(l,540,480+(i*70)));
+
+  // Divider
+  ctx.fillStyle='#ff2200'; ctx.fillRect(390,640,300,3);
+
+  // Caption text (animated by line)
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  ctx.font='44px Arial'; ctx.textAlign='center';
+  const words = text.split(' ');
+  let lines=[], cur='';
+  for(let w of words){
+    const t=cur?cur+' '+w:w;
+    if(ctx.measureText(t).width>920&&cur){lines.push(cur);cur=w;}
+    else cur=t;
+  }
+  if(cur) lines.push(cur);
+
+  const startY = 730;
+  lines.slice(0,16).forEach((l,i)=>{
+    const alpha = i < lineIndex ? 1 : i===lineIndex ? 1 : 0.2;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillText(l, 540, startY+(i*62));
+  });
+
+  // Bottom CTA
+  ctx.fillStyle='rgba(255,34,0,0.85)'; ctx.fillRect(0,1820,1080,100);
+  ctx.fillStyle='#ffffff'; ctx.font='bold 44px Arial';
+  ctx.fillText('LIKE & FOLLOW FOR MORE! 🔥', 540, 1880);
+
+  // Progress bar
+  const prog = totalLines>0 ? lineIndex/totalLines : 0;
+  ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.fillRect(60,1800,960,8);
+  ctx.fillStyle='#ff2200'; ctx.fillRect(60,1800,960*prog,8);
+}
+
+// ── Main Automation ────────────────────────────────────
+async function runAutomation() {
+  const engine = document.getElementById('aiEngine').value;
+  const groqKey = document.getElementById('groqKey').value.trim();
+  const geminiKey = document.getElementById('geminiKey').value.trim();
+
+  if((engine==='groq'||engine==='both')&&!groqKey){alert('Enter Groq API key!');return;}
+  if((engine==='gemini'||engine==='both')&&!geminiKey){alert('Enter Gemini API key!');return;}
+
+  const btn = document.getElementById('mainBtn');
+  btn.disabled=true; btn.textContent='⏳ Working...';
+  document.getElementById('scriptCard').style.display='none';
+  document.getElementById('videoCard').style.display='none';
+
+  // ── Step 1: Script ──
+  setStep(1,'active','Calling AI...'); setProgress(10);
+  try {
+    const topic = document.getElementById('topic').value.trim() ||
+      TOPICS[Math.floor(Math.random()*TOPICS.length)];
+    let parsed;
+    if(engine==='gemini') parsed=await callGemini(topic,geminiKey);
+    else if(engine==='groq') parsed=await callGroq(topic,groqKey);
+    else {
+      try{ parsed=await callGemini(topic,geminiKey); }
+      catch(e){ setStep(1,'active','Gemini failed, trying Groq...'); parsed=await callGroq(topic,groqKey); }
+    }
+    script=parsed.script; title=parsed.title; tags=parsed.tags;
+    document.getElementById('scriptOutput').textContent=script;
+    document.getElementById('titleOutput').textContent='📌 '+title;
+    document.getElementById('tagsOutput').innerHTML=tags.map(t=>`<span class="tag">#${t}</span>`).join('');
+    document.getElementById('scriptCard').style.display='block';
+    setStep(1,'done','Script ready!'); setProgress(30);
+  } catch(e){
+    setStep(1,'error','Failed: '+e.message);
+    btn.disabled=false; btn.textContent='🚀 GENERATE TODAY\'S VIDEO'; return;
+  }
+
+  // ── Step 2: Voiceover ──
+  setStep(2,'active','Recording voiceover...'); setProgress(45);
+  try {
+    // Make sure voices are loaded
+    await new Promise(r=>{
+      if(speechSynthesis.getVoices().length>0){r();return;}
+      speechSynthesis.onvoiceschanged=r;
+      setTimeout(r,2000);
+    });
+    await recordSpeech(script);
+    setStep(2,'done','Voiceover recorded!'); setProgress(60);
+  } catch(e){
+    setStep(2,'error','Voiceover failed: '+e.message);
+    btn.disabled=false; btn.textContent='🚀 GENERATE TODAY\'S VIDEO'; return;
+  }
+
+  // ── Step 3: Build MP4 with FFmpeg ──
+  setStep(3,'active','Loading video engine...'); setProgress(65);
+  document.getElementById('ffmpegCard').style.display='block';
+
+  try {
+    // Load FFmpeg
+    if(!ffmpegLoaded){
+      const script_tag = document.createElement('script');
+      script_tag.src='https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+      document.head.appendChild(script_tag);
+      await new Promise((res,rej)=>{
+        script_tag.onload=res;
+        script_tag.onerror=rej;
+        setTimeout(res,8000);
+      });
+      ({createFFmpeg,fetchFile}=FFmpeg);
+      ffmpegLoaded=true;
+    }
+
+    const ffmpeg = createFFmpeg({log:false});
+    document.getElementById('ffmpegMsg').innerHTML='<span class="spinner">⚙️</span><br>Starting FFmpeg...';
+    await ffmpeg.load();
+
+    setStep(3,'active','Building video frames...'); setProgress(70);
+    document.getElementById('ffmpegMsg').innerHTML='<span class="spinner">🎬</span><br>Rendering frames...<br><small style="color:#444">Please wait...</small>';
+
+    // Build canvas frames
+    const canvas = document.createElement('canvas');
+    const words = script.split(' ');
+    const ctx2 = canvas.getContext('2d');
+    canvas.width=1080; canvas.height=1920;
+
+    // Build text lines for animation
+    buildFrame(canvas, script, 0, 1);
+    ctx2.font='44px Arial';
+    let lines2=[], cur2='';
+    for(let w of words){
+      const t=cur2?cur2+' '+w:w;
+      if(ctx2.measureText(t).width>920&&cur2){lines2.push(cur2);cur2=w;}
+      else cur2=t;
+    }
+    if(cur2) lines2.push(cur2);
+
+    // Write audio
+    const audioData = new Uint8Array(await audioBlob.arrayBuffer());
+    ffmpeg.FS('writeFile','audio.webm',audioData);
+
+    // Generate frames (one per 2 lines shown = animated text reveal)
+    const FPS=24, DURATION=48; // 48 seconds, 24fps = 1152 frames
+    const framesPerLine = Math.floor(DURATION*FPS/Math.max(lines2.length,1));
+
+    let frameIdx=0;
+    for(let li=0;li<=lines2.length;li++){
+      buildFrame(canvas,script,li,lines2.length);
+      const imgData = canvas.toDataURL('image/jpeg',0.85);
+      const base64 = imgData.split(',')[1];
+      const bytes = Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
+      const count = li<lines2.length ? framesPerLine : Math.max(1,DURATION*FPS-(frameIdx));
+      for(let f=0;f<count;f++){
+        ffmpeg.FS('writeFile',`frame${String(frameIdx).padStart(5,'0')}.jpg`,bytes);
+        frameIdx++;
+      }
+    }
+
+    setStep(3,'active','Encoding MP4...'); setProgress(85);
+    document.getElementById('ffmpegMsg').innerHTML='<span class="spinner">🎥</span><br>Encoding MP4...<br><small style="color:#444">Almost done!</small>';
+
+    await ffmpeg.run(
+      '-framerate',String(FPS),
+      '-i','frame%05d.jpg',
+      '-i','audio.webm',
+      '-c:v','libx264',
+      '-c:a','aac',
+      '-shortest',
+      '-pix_fmt','yuv420p',
+      '-vf','scale=1080:1920',
+      'output.mp4'
+    );
+
+    const data = ffmpeg.FS('readFile','output.mp4');
+    const videoBlob = new Blob([data.buffer],{type:'video/mp4'});
+    const videoUrl = URL.createObjectURL(videoBlob);
+
+    document.getElementById('videoPlayer').src=videoUrl;
+    document.getElementById('downloadBtn').onclick=()=>{
+      const a=document.createElement('a');
+      a.href=videoUrl;
+      a.download='shorts-'+new Date().toISOString().slice(0,10)+'.mp4';
+      a.click();
+    };
+    document.getElementById('videoCard').style.display='block';
+    document.getElementById('ffmpegCard').style.display='none';
+
+    setStep(3,'done','MP4 ready!'); setProgress(100);
+    setStep(4,'done','Download below & upload to YouTube!');
+
+  } catch(e){
+    setStep(3,'error','Video failed: '+e.message);
+    document.getElementById('ffmpegMsg').innerHTML=
+      `<div style="color:#ff4444">❌ ${e.message}</div>
+       <div style="margin-top:10px;font-size:12px;color:#666">
+       Your script is ready above — copy it and use CapCut to make the video manually.
+       </div>`;
+  }
+
+  btn.disabled=false; btn.textContent='🔄 GENERATE NEW VIDEO';
+}
+
+function copyScript(){
+  navigator.clipboard.writeText(script);
+  event.target.textContent='✅ Copied!';
+  setTimeout(()=>event.target.textContent='📋 Copy Script',2000);
+}
+</script>
+</body>
+</html>
